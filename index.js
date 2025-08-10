@@ -66,20 +66,31 @@ bot.action('show_stats', (ctx) => {
 });
 
 // Feedback (dinamik ishlash uchun)
-bot.action('send_feedback', (ctx) => {
-  ctx.deleteMessage();
-  ctx.reply('✍️ Savolingiz yoki fikringizni yozing:');
+// Callback query ishlovchi
+bot.action('send_feedback', async (ctx) => {
+  await ctx.reply("✍️ Fikr va mulohazalaringizni yozib yuboring:");
 
-  bot.once('text', async (msgCtx) => {
+  // Bu listener faqat bir marta ishlaydi
+  const onText = async (msgCtx) => {
+    // Foydalanuvchi yozgan matn
     const feedback = msgCtx.message.text;
 
-    await msgCtx.reply('✅ Fikringiz qabul qilindi. Rahmat!');
-    await bot.telegram.sendMessage(
-      process.env.ADMIN_ID,
-      `📩 Feedback ${msgCtx.from.first_name} (${msgCtx.from.id}) dan:\n${feedback}`
+    // Fikrni o'zingga yoki admin kanaliga yuborish
+    await ctx.telegram.sendMessage(
+      process.env.ADMIN_CHAT_ID,
+      `📩 Yangi fikr:\n${feedback}`
     );
-  });
+
+    await msgCtx.reply("✅ Fikringiz uchun rahmat!");
+
+    // Listenerni o'chirish (faqat bitta javob qabul qilinadi)
+    bot.off('text', onText);
+  };
+
+  // Listener qo'shish
+  bot.on('text', onText);
 });
 
 bot.launch();
 console.log('🤖 Bot ishga tushdi...');
+
