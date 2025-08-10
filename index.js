@@ -3,10 +3,10 @@ const { Telegraf, Markup } = require('telegraf');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-let users = new Set(); // foydalanuvchilarni saqlash
-const TOTAL_TESTS = 30; // har bo'lim uchun test soni
+let users = new Set(); 
+const TOTAL_TESTS = 30; 
 
-// Start komandasi
+// /start komandasi
 bot.start((ctx) => {
   users.add(ctx.from.id);
   ctx.reply(
@@ -20,27 +20,43 @@ bot.start((ctx) => {
   );
 });
 
-// Listening testlari
+// Listening testlari (3 ustun)
 bot.action('choose_listening', (ctx) => {
+  ctx.deleteMessage(); // eski xabarni o‘chiradi
+
   const buttons = [];
   for (let i = 1; i <= TOTAL_TESTS; i++) {
-    buttons.push([Markup.button.url(`Test ${i}`, `https://example.com/listening/${i}`)]);
+    buttons.push(Markup.button.url(`Test ${i}`, `https://example.com/listening/${i}`));
   }
-  ctx.reply('🎧 Listening testlari:', Markup.inlineKeyboard(buttons));
+
+  const chunkedButtons = [];
+  for (let i = 0; i < buttons.length; i += 3) {
+    chunkedButtons.push(buttons.slice(i, i + 3));
+  }
+
+  ctx.reply('🎧 Listening testlari:', Markup.inlineKeyboard(chunkedButtons));
 });
 
-// Reading testlari
+// Reading testlari (3 ustun)
 bot.action('choose_reading', (ctx) => {
+  ctx.deleteMessage();
+
   const buttons = [];
   for (let i = 1; i <= TOTAL_TESTS; i++) {
-    buttons.push([Markup.button.url(`Test ${i}`, `https://example.com/reading/${i}`)]);
+    buttons.push(Markup.button.url(`Test ${i}`, `https://example.com/reading/${i}`));
   }
-  ctx.reply('📖 Reading testlari:', Markup.inlineKeyboard(buttons));
+
+  const chunkedButtons = [];
+  for (let i = 0; i < buttons.length; i += 3) {
+    chunkedButtons.push(buttons.slice(i, i + 3));
+  }
+
+  ctx.reply('📖 Reading testlari:', Markup.inlineKeyboard(chunkedButtons));
 });
 
 // Statistika
 bot.action('show_stats', (ctx) => {
-  ctx.answerCbQuery();
+  ctx.deleteMessage();
   ctx.reply(
     `📊 Statistika:\n` +
     `Listening testlari: ${TOTAL_TESTS} ta\n` +
@@ -49,14 +65,19 @@ bot.action('show_stats', (ctx) => {
   );
 });
 
-// Feedback
+// Feedback (dinamik ishlash uchun)
 bot.action('send_feedback', (ctx) => {
-  ctx.answerCbQuery();
+  ctx.deleteMessage();
   ctx.reply('✍️ Savolingiz yoki fikringizni yozing:');
-  bot.once('text', (msgCtx) => {
+
+  bot.once('text', async (msgCtx) => {
     const feedback = msgCtx.message.text;
-    msgCtx.reply('✅ Fikringiz qabul qilindi. Rahmat!');
-    bot.telegram.sendMessage(process.env.ADMIN_ID, `📩 Feedback ${msgCtx.from.first_name}dan:\n${feedback}`);
+
+    await msgCtx.reply('✅ Fikringiz qabul qilindi. Rahmat!');
+    await bot.telegram.sendMessage(
+      process.env.ADMIN_ID,
+      `📩 Feedback ${msgCtx.from.first_name} (${msgCtx.from.id}) dan:\n${feedback}`
+    );
   });
 });
 
